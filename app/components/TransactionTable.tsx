@@ -2,6 +2,13 @@ import React from 'react'
 import { Transactions } from '../transaction/page'
 
 const Table = ({transactions} : {transactions: Transactions[]}) => {
+
+    const formatAmount = (amount : number ) => {
+        return amount.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        })
+    }
   return (
     <div className='overflow-x-auto mx-30 justify-center '>
         <h2 className='text-2xl font-semibold mb-4 text-black text-center'>Account Transaction History</h2>
@@ -21,7 +28,7 @@ const Table = ({transactions} : {transactions: Transactions[]}) => {
                 {transactions.map( (transaction) => (
                     <tr key={transaction.tid} className='hover:bg-gray-200 border-b transition-colors duration-300'>
                         <td className="px-4 py-2">{transaction.tid}</td>
-                        <td className="px-4 py-2">{transaction.amount}</td>
+                        <td className="px-4 py-2">Php {formatAmount(transaction.amount)}</td>
                         <td className="px-4 py-2">{new Date(transaction.date).toLocaleDateString()}</td>
                         <td className="px-4 py-2">{transaction.type}</td>
                         <td className="px-4 py-2">{transaction.receiver_acc}</td>
