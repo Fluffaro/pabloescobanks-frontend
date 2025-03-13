@@ -1,21 +1,36 @@
+import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 import React from "react";
+import MotionButton from "./MotionButton";
+import { User } from "../transaction/page";
 
-const Header = () => {
+interface HeaderProps {
+  user? : User;
+}
+const Header = ({user} : HeaderProps) => {
+  const router = useRouter();
   return (
-    <header className="text-black m-10">
-      <h1 className="text-1xl font-bold">Pablo EscoBank</h1>
-      <div className="flex items-center">
-        <button className="absolute m-10 top-0 right-0 rounded-full border-2 border-transparent hover:ring-4  hover:ring-blue-500 focus:outline-none">
-          <img
-            src="/pablologo.png"
-            alt="pablo"
-            className="w-10 h-10 rounded-full"
-          />
-        </button>
-        <span className=" font-semibold">USERNAME</span>
-      </div>
-    </header>
+    <div className="flex justify-between items-center m-10 text-black">
+  {/* Bank Name on the Left */}
+  <h1 className="text-xl font-bold">Welcome To Pablo EscoBANKS, {user?.name}</h1>
+ 
+  {/* Tilting Logo in the Center */}
+  <motion.img
+    src="/pablologo.png"
+    alt="Pablo EscoBANKS Logo"
+    className="h-40 w-auto mr-22"
+    animate={{ rotate: [0, 5, -5, 0] }} // Tilts left and right
+    transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
+  />
+ 
+  {/* Logout Button on the Right */}
+  <MotionButton onClick={() => router.push("/")}>Logout</MotionButton>
+</div>
   );
 };
+
+
+ 
+
 
 export default Header;

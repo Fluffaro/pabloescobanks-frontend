@@ -15,7 +15,6 @@ const SearchBar: React.FC<SearchBarProps> = ({onFilterChange}) => {
     }
   return (
     <div className="flex flex-col items-center text-black p-5">
-      <div className="text-xl mb-4">List of Transactions</div>
       <div className="flex space-x-4 mb-4 items-center">
         <select className="p-2 border rounded" value={type} onChange={(e) => setType(e.target.value)}>
           <option value="">Select Transaction Type</option>
