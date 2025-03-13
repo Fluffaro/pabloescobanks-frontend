@@ -44,10 +44,10 @@ const Table = ({ transactions }: { transactions: Transactions[] }) => {
           <tbody>
             {currentTransactions.map((transaction) => (
               <tr
-                key={transaction.tid}
+                key={transaction.tId}
                 className="hover:bg-gray-200 border-b transition-colors duration-300"
               >
-                <td className="px-4 py-2">{transaction.tid}</td>
+                <td className="px-4 py-2">{transaction.tId}</td>
                 <td className="px-4 py-2">
                   Php {formatAmount(transaction.amount)}
                 </td>
@@ -55,8 +55,8 @@ const Table = ({ transactions }: { transactions: Transactions[] }) => {
                   {new Date(transaction.date).toLocaleDateString()}
                 </td>
                 <td className="px-4 py-2">{transaction.type}</td>
-                <td className="px-4 py-2">{transaction.receiverAccount.aid}</td>
-                <td className="px-4 py-2">{transaction.sendingAccount.aid}</td>
+                <td className="px-4 py-2">{transaction.receiverAccount?.aId ?? "NA"}</td>
+                <td className="px-4 py-2">{transaction.sendingAccount?.aId ?? "NA"}</td>
               </tr>
             ))}
           </tbody>
