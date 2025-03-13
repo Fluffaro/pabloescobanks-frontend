@@ -96,6 +96,13 @@ export default function Dashboard() {
   const indexOfLastTransaction = currentPage * transactionsPerPage;
   const indexOfFirstTransaction = indexOfLastTransaction - transactionsPerPage;
 
+
+
+  const reloadPage = () => {
+    window.location.reload();
+};
+
+
   // -------------------------------------------------------------------------
   // ✅ SORT THE TRANSACTIONS BEFORE PAGINATION
   // We create a sorted copy of 'transactions' based on 'sortColumn' & 'sortDirection'
@@ -118,8 +125,8 @@ export default function Dashboard() {
 
     // sort by receiver (account ID) – if missing, treat as 0
     if (sortColumn === "receiver") {
-      const recvA = a.receiverAccount?.aid || 0;
-      const recvB = b.receiverAccount?.aid || 0;
+      const recvA = a.receiverAccount?.aId || 0;
+      const recvB = b.receiverAccount?.aId || 0;
       return sortDirection === "asc" ? recvA - recvB : recvB - recvA;
     }
 
@@ -205,7 +212,7 @@ export default function Dashboard() {
   // 🔹 Handle Deposits
   const handleDeposit = async () => {
     const parsedAmount = parseFloat(depositAmount);
-    
+  
     if (!depositAmount || isNaN(parsedAmount) || parsedAmount <= 0) {
       console.error("Invalid deposit amount:", depositAmount);
       return;
@@ -222,20 +229,19 @@ export default function Dashboard() {
         }
       });
   
-      const data = await response.text(); // Read response
-      console.log("Deposit response:", data);
-  
-      if (!response.ok) {
-        throw new Error(data || "Deposit failed");
-      }
+      if (!response.ok) throw new Error("Deposit failed");
   
       setModalType(null);
       setDepositAmount("");
-      fetchAccountDetails();
+  
+      // ✅ Fetch latest balance and transactions instead of full page reload
+      await fetchAccountDetails();
+      await fetchTransactions();
     } catch (error) {
       console.error("Deposit failed:", error);
     }
   };
+  
   
   
 
@@ -252,32 +258,31 @@ export default function Dashboard() {
   
     try {
       const response = await fetch(`${API_BASE_URL}/accounts/withdraw/${userId}?amount=${parsedAmount}`, {
-        method: "PUT", // ✅ Ensure method matches backend
+        method: "PUT",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`,
         }
       });
   
-      const data = await response.text();
-      console.log("Withdraw response:", data);
-  
-      if (!response.ok) {
-        throw new Error(data || "Withdrawal failed");
-      }
+      if (!response.ok) throw new Error("Withdrawal failed");
   
       setModalType(null);
       setWithdrawAmount("");
-      fetchAccountDetails();
+  
+      // ✅ Fetch latest balance and transactions instead of full page reload
+      await fetchAccountDetails();
+      await fetchTransactions();
     } catch (error) {
       console.error("Withdrawal failed:", error);
     }
   };
+  
 
   // 🔹 Handle Money Transfers
   const handleTransfer = async () => {
     const parsedAmount = parseFloat(transferAmount);
-    const parsedReceiverId = parseInt(receiverAccountId); // ✅ Ensure it's a valid Long type
+    const parsedReceiverId = parseInt(receiverAccountId);
   
     if (!transferAmount || isNaN(parsedAmount) || parsedAmount <= 0) {
       console.error("Invalid transfer amount:", transferAmount);
@@ -292,7 +297,6 @@ export default function Dashboard() {
     console.log(`Sending transfer request: senderId=${userId}, receiverAccountId=${parsedReceiverId}, amount=${parsedAmount}`);
   
     try {
-      // ✅ Check if your backend expects Query Params or JSON Body
       const response = await fetch(`${API_BASE_URL}/transactions/transfer?senderId=${userId}&receiverAccountId=${parsedReceiverId}&amount=${parsedAmount}`, {
         method: "POST",
         headers: {
@@ -301,22 +305,22 @@ export default function Dashboard() {
         },
       });
   
-      const data = await response.text();
-      console.log("Transfer response:", data);
-  
-      if (!response.ok) {
-        throw new Error(data || "Transfer failed");
-      }
+      if (!response.ok) throw new Error("Transfer failed");
   
       setModalType(null);
       setTransferAmount("");
       setReceiverAccountId("");
-      fetchAccountDetails();
-      fetchTransactions();
+  
+      // ✅ Fetch latest balance and transactions instead of full page reload
+      await fetchAccountDetails();
+      await fetchTransactions();
     } catch (error) {
       console.error("Transfer failed:", error);
     }
   };
+  
+
+  
   
   
 
@@ -399,7 +403,7 @@ export default function Dashboard() {
                 <td className="border p-5">{new Date(tx.date).toLocaleDateString()}</td>
                 <td className="border p-2">{tx.type || "N/A"}</td>
                 <td className="border p-2">
-                  {tx.receiverAccount ? `To Account ID:  ${tx.receiverAccount.aid}` : "N/A"} 
+                  {tx.receiverAccount ? `To Account ID:  ${tx.receiverAccount.aId}` : "N/A"} 
                 </td> 
                 <td className="border p-2">₱{tx.amount.toFixed(2)}</td>
               </tr>
@@ -410,7 +414,7 @@ export default function Dashboard() {
 
       {/* ✅ PAGINATION CONTROLS */}
       <div className="flex justify-center mt-4 space-x-4">
-        <button 
+      <MotionButton 
           onClick={goToPrevPage} 
           disabled={currentPage === 1} 
           className={`px-4 py-2 rounded-md ${
@@ -418,11 +422,11 @@ export default function Dashboard() {
           }`}
         >
           ◄
-        </button>
+        </MotionButton>
 
         <span className="font-bold">Page {currentPage} of {totalPages}</span>
 
-        <button 
+        <MotionButton 
           onClick={goToNextPage} 
           disabled={currentPage === totalPages} 
           className={`px-4 py-2 rounded-md ${
@@ -430,7 +434,7 @@ export default function Dashboard() {
           }`}
         >
           ►
-        </button>
+        </MotionButton>
       </div>
 
       {/* -- NO LINES REMOVED BELOW THIS POINT -- */}
