@@ -9,21 +9,55 @@ export interface Transactions {
   amount: number;
   date: Date;
   type: String;
-  receiver_acc: number;
-  sending_acc: number;
+  receiverAccount: {
+    aid: number
+  },
+  sendingAccount:{
+    aid: number
+  }
+}
+
+export interface User {
+  uid: number;
+  name: string,
 }
 
 const page = () => {
   const [transactions, setTransactions] = useState<Transactions[]>([]);
-  const [filteredTransactions, setFilteredTransactions] = useState<Transactions[]>([]);
+  const [filteredTransactions, setFilteredTransactions] = useState<
+    Transactions[]
+  >([]);
   const [transactionType, setTransactionType] = useState<string>("");
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState<boolean>(true);
+  const [user, setUser] = useState<User>();
+  async function fetchUser() {
+    const token = localStorage.getItem("token");
+    const userId = localStorage.getItem("userId");
+
+    try {
+      const userRes = await fetch(`http://localhost:8080/api/users/${userId}`, {
+        headers: {
+          'Content-Type' : 'application/json',
+          Authorization: `Bearer ${token}`
+        }
+      })
+
+      if (!userRes.ok)  throw new Error("Failed to fetch user");
+      const userData = await userRes.json();
+      setUser(userData);
+    } catch (error: any) {
+      console.error(error);
+      setError(error.message);
+    }
+  }
 
   async function fetchTransaction() {
     const token = localStorage.getItem("token");
     const userId = localStorage.getItem("userId");
+    setLoading(true);
     try {
       const transactionRes = await fetch(
         `http://localhost:8080/api/transactions/user/${userId}`,
@@ -41,38 +75,43 @@ const page = () => {
     } catch (error: any) {
       console.error(error);
       setError(error.message);
+    } finally {
+      setLoading(false);
     }
+
+
   }
 
   const filterTransactions = () => {
     let filtered = [...transactions];
 
-    if(transactionType != ""){
-        filtered=filtered.filter((transaction) => transaction.type === transactionType);
+    if (transactionType != "") {
+      filtered = filtered.filter(
+        (transaction) => transaction.type === transactionType
+      );
     }
 
-    if(startDate){
-        filtered = filtered.filter(
-            (transaction) => new Date(transaction.date) >= new Date(startDate)
-        );
+    if (startDate) {
+      filtered = filtered.filter(
+        (transaction) => new Date(transaction.date) >= new Date(startDate)
+      );
     }
 
-    if(endDate){
-        filtered = filtered.filter(
-            (transaction) => new Date(transaction.date) <= new Date(endDate)
-        );
+    if (endDate) {
+      filtered = filtered.filter(
+        (transaction) => new Date(transaction.date) <= new Date(endDate)
+      );
     }
 
     setFilteredTransactions(filtered);
-  }
+  };
 
   useEffect(() => {
-    
-
     fetchTransaction();
+    fetchUser();
   }, []);
 
-  function handleFilterChange( type: string, start: string, end: string){
+  function handleFilterChange(type: string, start: string, end: string) {
     setTransactionType(type);
     setStartDate(start);
     setEndDate(end);
@@ -85,13 +124,26 @@ const page = () => {
   return (
     <div className="bg-white flex flex-col h-full min-h-screen w-full min-w-screen">
       {/* Header of the page = to be adjusted*/}
-      <Header />
 
-      {/*  Filters and Search => Search by date range filter by type  */}
-      <SearchBar onFilterChange={handleFilterChange} />
-
-      {/* Table of transaction made by the user */}
-      <Table transactions={filteredTransactions} />
+      {loading ? (
+        <div className="flex flex-col justify-center items-center my-8 min-h-screen">
+            <img src="/pablologo.png" alt="Loading logo" className="animate-spin w-40 h-40 mb-4"/>
+            <span className="ml-4 text-lg text-gray-500">Loading Transactions...</span>
+        </div>
+      ) : error ? (
+        <div className="text-center text-red-500">
+          <p>Error: {error}</p>
+        </div>
+      ) : (
+        <div>
+   
+          <Header user={user}/>
+          {/*  Filters and Search => Search by date range filter by type  */}
+          <SearchBar onFilterChange={handleFilterChange} />
+          {/* Table of transaction made by the user */}
+          <Table transactions={filteredTransactions} />{" "}
+        </div>
+      )}
     </div>
   );
 };
