@@ -10,10 +10,10 @@ export interface Transactions {
   date: Date;
   type: String;
   receiverAccount: {
-    aid: number
+    aId: number
   },
   sendingAccount:{
-    aid: number
+    aId: number
   }
 }
 
@@ -56,7 +56,7 @@ const page = () => {
 
   async function fetchTransaction() {
     const token = localStorage.getItem("token");
-    const userId = localStorage.getItem("userId");
+    const userId = localStorage.getItem("UIDparam");
     setLoading(true);
     try {
       const transactionRes = await fetch(
