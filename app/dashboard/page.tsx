@@ -1,6 +1,5 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/router'
 
 const DashboardPage = () => {
   const [balance, setBalance] = useState(null);
@@ -53,7 +52,7 @@ const DashboardPage = () => {
 
   // Deposit funds
   const handleDeposit = async () => {
-    if (!depositAmount || depositAmount == '0') return;
+    if (!depositAmount) return;
     try {
       const response = await fetch(
         `http://localhost:8080/api/accounts/deposit/${userId}?amount=${depositAmount}`,
@@ -76,7 +75,7 @@ const DashboardPage = () => {
 
   // Withdraw funds
   const handleWithdraw = async () => {
-    if (!withdrawAmount || withdrawAmount == '0') return;
+    if (!withdrawAmount) return;
     try {
       const response = await fetch(
         `http://localhost:8080/api/accounts/withdraw/${userId}?amount=${withdrawAmount}`,
@@ -140,8 +139,6 @@ const DashboardPage = () => {
     }
   };
 
-  console.log("Transactions: ", transactions)
-
   return (
     <div>
       <h1>Dashboard</h1>
@@ -156,7 +153,6 @@ const DashboardPage = () => {
           value={depositAmount}
           onChange={(e) => setDepositAmount(e.target.value)}
           placeholder="Amount"
-          min={0}
         />
         <button onClick={handleDeposit}>Deposit</button>
       </section>
@@ -167,7 +163,6 @@ const DashboardPage = () => {
           value={withdrawAmount}
           onChange={(e) => setWithdrawAmount(e.target.value)}
           placeholder="Amount"
-          min={0}
         />
         <button onClick={handleWithdraw}>Withdraw</button>
       </section>
@@ -187,16 +182,14 @@ const DashboardPage = () => {
         />
         <button onClick={handleTransfer}>Transfer</button>
       </section>
-      {/* To be removed */}
-      <button onClick={() => {window.location.href = '/transaction'}}>Transactions</button>
       <section>
         <h3>Transaction History</h3>
         {transactions && transactions.length > 0 ? (
           <ul>
             {transactions.map((tx, index) => (
               <li key={index}>
-                <strong>{new Date(tx.date).toLocaleDateString()}</strong> - {tx.type} of ${tx.amount} 
-                {tx.sendingAccount && ` from Account ${tx.sendingAccount.aId}`} 
+                <strong>{new Date(tx.date).toLocaleDateString()}</strong> - {tx.type} of ${tx.amount}
+                {tx.sendingAccount && ` from Account ${tx.sendingAccount.aId}`}
                 {tx.receiverAccount && ` to Account ${tx.receiverAccount.aId}`}
               </li>
             ))}
