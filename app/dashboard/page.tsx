@@ -2,6 +2,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import { User } from "../transaction/page";
+import Header from "../components/Header";
 
 const API_BASE_URL = "http://localhost:8080/api"; // Change this if needed
 
@@ -64,7 +66,7 @@ export default function Dashboard() {
   const [balance, setBalance] = useState<string>("₱0.00");
   const [transactions, setTransactions] = useState<any[]>([]);
   const [error, setError] = useState<string>(""); // ✅ Add error handling
-
+  const [user, setUser] = useState<User>();
   // ✅ Define separate state variables
   const [depositAmount, setDepositAmount] = useState<string>("");
   const [withdrawAmount, setWithdrawAmount] = useState<string>("");
@@ -75,6 +77,27 @@ export default function Dashboard() {
   // ✅ SORTING STATE (added without removing any lines)
   const [sortColumn, setSortColumn] = useState<"date" | "type" | "receiver" | "amount">("date");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+
+  async function fetchUser() {
+    const token = localStorage.getItem("token");
+    const userId = localStorage.getItem("userId");
+
+    try {
+      const userRes = await fetch(`http://localhost:8080/api/users/${userId}`, {
+        headers: {
+          'Content-Type' : 'application/json',
+          Authorization: `Bearer ${token}`
+        }
+      })
+
+      if (!userRes.ok)  throw new Error("Failed to fetch user");
+      const userData = await userRes.json();
+      setUser(userData);
+    } catch (error: any) {
+      console.error(error);
+      setError(error.message);
+    }
+  }
 
   // This function toggles sort column & direction
   const handleSort = (column: "date" | "type" | "receiver" | "amount") => {
@@ -155,7 +178,6 @@ export default function Dashboard() {
   // ✅ Remove formData OR only use it for transfer
   const [formData, setFormData] = useState({ amount: "", receiverId: "" });
 
-  useEffect
 
 
   // 🔹 Fetch account details
@@ -180,8 +202,9 @@ export default function Dashboard() {
 
   // 🔹 Fetch transaction history
   const fetchTransactions = async () => {
+    console.log("Fetch Transaction: ", userId);
     try {
-      const response = await fetch(`${API_BASE_URL}/transactions/account/${userId}`, {
+      const response = await fetch(`${API_BASE_URL}/transactions/user/${userId}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -204,11 +227,10 @@ export default function Dashboard() {
   useEffect(() => {
     fetchAccountDetails();
     fetchTransactions();
-  
+    fetchUser();
     return () => {
     };
   }, []);
-
   // 🔹 Handle Deposits
   const handleDeposit = async () => {
     const parsedAmount = parseFloat(depositAmount);
@@ -244,7 +266,6 @@ export default function Dashboard() {
   
   
   
-
   // 🔹 Handle Withdrawals
   const handleWithdraw = async () => {
     const parsedAmount = parseFloat(withdrawAmount);
@@ -319,7 +340,7 @@ export default function Dashboard() {
     }
   };
   
-
+  console.log(userId);
   
   
   
@@ -328,23 +349,7 @@ export default function Dashboard() {
     <div className="p-10">
       
         {/* Header Section */}
-        <div className="flex justify-between items-center mb-5">
-  {/* Left side: Logo and text side by side */}
-  <div className="flex items-center space-x-4">
-    <motion.img
-      src="/logoNoText.png"
-      alt="Pablo EscoBANKS Logo"
-      className="h-16 w-auto"
-      animate={{ rotate: [0, 5, -5, 0] }} // Tilts left and right
-      transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
-    />
-    <h1 className="text-xl font-bold">Pablo EscoBANKS</h1>
-  </div>
-
-  {/* Logout Button on the Right */}
-  <MotionButton onClick={() => router.push("/")}>Logout</MotionButton>
-</div>
-
+    <Header user={user} />
 
       <h1 className="text-2xl font-bold text-center text-blue-900 mb-4">Pablo EscoHUB</h1>
       <div className="flex justify-center gap-6">
