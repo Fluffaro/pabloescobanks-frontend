@@ -18,10 +18,11 @@ const SearchBar: React.FC<SearchBarProps> = ({onFilterChange}) => {
       <div className="flex space-x-4 mb-4 items-center">
         <select className="p-2 border rounded" value={type} onChange={(e) => setType(e.target.value)}>
           <option value="">Select Transaction Type</option>
-          <option value="withdraw">Withdraw</option>
-          <option value="transfer">Transfer</option>
-          <option value="deposit">Deposit</option>
+          <option value="Withdraw">Withdraw</option>
+          <option value="Transfer">Transfer</option>
+          <option value="Deposit">Deposit</option>
         </select>
+
 
         <label>From: </label>
         <input type="date" className="p-2 border rounded" value={start} onChange={(e) => setStart(e.target.value)} />
