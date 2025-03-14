@@ -55,8 +55,8 @@ const Table = ({ transactions }: { transactions: Transactions[] }) => {
                   {new Date(transaction.date).toLocaleDateString()}
                 </td>
                 <td className="px-4 py-2">{transaction.type}</td>
-                <td className="px-4 py-2">{transaction.receiverAccount?.aId ?? "NA"}</td>
-                <td className="px-4 py-2">{transaction.sendingAccount?.aId ?? "NA"}</td>
+                <td className="px-4 py-2">{transaction.receiverAccount?.aId ?? " "}</td>
+                <td className="px-4 py-2">{transaction.sendingAccount?.aId ?? " "}</td>
               </tr>
             ))}
           </tbody>

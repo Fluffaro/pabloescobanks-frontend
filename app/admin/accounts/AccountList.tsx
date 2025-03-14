@@ -47,7 +47,7 @@ const AccountList = () => {
 
     const role = getUserRole(); // ✅ Get role from JWT noice
     if (role !== "ADMIN") {
-      router.push("/unauthorized"); // 🚫 Redirect non-admins
+      router.push("../../error/403"); // 🚫 Redirect non-admins
       return;
     }
 

@@ -271,7 +271,7 @@ export default function Dashboard() {
     const parsedAmount = parseFloat(withdrawAmount);
   
     if (!withdrawAmount || isNaN(parsedAmount) || parsedAmount <= 0) {
-      console.error("Invalid withdrawal amount:", withdrawAmount);
+      router.push("../error/500")
       return;
     }
   
