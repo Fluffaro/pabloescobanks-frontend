@@ -45,7 +45,7 @@ const AccountList = () => {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const role = getUserRole(); // ✅ Get role from JWT
+    const role = getUserRole(); // ✅ Get role from JWT noice
     if (role !== "ADMIN") {
       router.push("/unauthorized"); // 🚫 Redirect non-admins
       return;
