@@ -342,7 +342,11 @@ export default function Dashboard() {
   </div>
 
   {/* Logout Button on the Right */}
-  <MotionButton onClick={() => router.push("/")}>Logout</MotionButton>
+  <MotionButton onClick={() => {
+    localStorage.removeItem("token");  // Remove token
+    localStorage.removeItem("userId"); // Remove userId
+    router.push("/"); // Redirect to login page
+    }}>Logout</MotionButton>
 </div>
 
 

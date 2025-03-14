@@ -5,27 +5,33 @@ import MotionButton from "./MotionButton";
 import { User } from "../transaction/page";
 
 interface HeaderProps {
-  user? : User;
+  user? : User | null;
 }
+
 const Header = ({user} : HeaderProps) => {
   const router = useRouter();
   return (
-    <div className="flex justify-between items-center m-10 text-black">
-  {/* Bank Name on the Left */}
-  <h1 className="text-xl font-bold">Welcome To Pablo EscoBANKS, {user?.name}</h1>
- 
-  {/* Tilting Logo in the Center */}
-  <motion.img
-    src="/pablologo.png"
-    alt="Pablo EscoBANKS Logo"
-    className="h-40 w-auto mr-22"
-    animate={{ rotate: [0, 5, -5, 0] }} // Tilts left and right
-    transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
-  />
- 
+        <div className="flex justify-between items-center mb-5">
+  {/* Left side: Logo and text side by side */}
+  <div className="flex items-center space-x-4">
+    <motion.img
+      src="/logoNoText.png"
+      alt="Pablo EscoBANKS Logo"
+      className="h-16 w-auto"
+      animate={{ rotate: [0, 5, -5, 0] }} // Tilts left and right
+      transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
+    />
+  <h1 className="text-xl font-bold">Welcome To Pablo EscoBANKS, {user?.name ?? "ADMIN"}</h1>
+  </div>
+
   {/* Logout Button on the Right */}
-  <MotionButton onClick={() => router.push("/")}>Logout</MotionButton>
+  <MotionButton onClick={() => {
+    localStorage.removeItem("token");  // Remove token
+    localStorage.removeItem("userId"); // Remove userId
+    router.push("/"); // Redirect to login page
+    }}>Logout</MotionButton>
 </div>
+
   );
 };
 
