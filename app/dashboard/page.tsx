@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { User } from "../transaction/page";
 import Header from "../components/Header";
-import ConfirmationModal from "../components/ConfirmationModal"; // <-- Import your new modal
+import ConfirmationModal from "../components/ConfirmationModal";
 
 const API_BASE_URL = "http://localhost:8080/api"; // Change this if needed
 
@@ -59,13 +59,13 @@ const Modal: React.FC<{
 
 export default function Dashboard() {
   const router = useRouter();
-  const userId = localStorage.getItem("userId"); 
+  const userId = localStorage.getItem("userId");
   const token = localStorage.getItem("token");
 
-  // Existing modals: deposit, withdraw, send
-  const [modalType, setModalType] = useState<"withdraw" | "send" | "deposit" | null>(null);
+  // Extend modalType union to include "request"
+  const [modalType, setModalType] = useState<"withdraw" | "send" | "deposit" | "request" | null>(null);
 
-  // NEW: confirmation modals
+  // Existing confirmation modals
   const [confirmDepositOpen, setConfirmDepositOpen] = useState(false);
   const [confirmWithdrawOpen, setConfirmWithdrawOpen] = useState(false);
   const [confirmSendOpen, setConfirmSendOpen] = useState(false);
@@ -80,6 +80,10 @@ export default function Dashboard() {
   const [withdrawAmount, setWithdrawAmount] = useState<string>("");
   const [transferAmount, setTransferAmount] = useState<string>("");
   const [receiverAccountId, setReceiverAccountId] = useState<string>("");
+
+  // NEW: For Request Money inputs
+  const [requestReceiverId, setRequestReceiverId] = useState<string>("");
+  const [requestAmount, setRequestAmount] = useState<string>("");
 
   // Sorting state
   const [sortColumn, setSortColumn] = useState<"date" | "type" | "receiver" | "amount">("date");
@@ -130,7 +134,7 @@ export default function Dashboard() {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`, 
+          Authorization: `Bearer ${token}`,
         },
       });
       if (!response.ok) throw new Error("Failed to fetch account details");
@@ -189,7 +193,7 @@ export default function Dashboard() {
       );
       if (!response.ok) throw new Error("Deposit failed");
 
-      setConfirmDepositOpen(false); // close the confirmation
+      setConfirmDepositOpen(false);
       setDepositAmount("");
 
       // refresh
@@ -216,7 +220,7 @@ export default function Dashboard() {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
-          }
+          },
         }
       );
       if (!response.ok) {
@@ -271,6 +275,40 @@ export default function Dashboard() {
   };
 
   // ---------------------------------------------------------------
+  // The actual request API call for creating a money request
+  const handleRequestMoney = async () => {
+    const parsedAmount = parseFloat(requestAmount);
+    const parsedReceiverId = parseInt(requestReceiverId);
+    if (!requestAmount || isNaN(parsedAmount) || parsedAmount <= 0) {
+      console.error("Invalid request amount:", requestAmount);
+      return;
+    }
+    if (!requestReceiverId || isNaN(parsedReceiverId)) {
+      console.error("Invalid receiver ID:", requestReceiverId);
+      return;
+    }
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/requests/create?requesterAccId=${userId}&receiverAccId=${parsedReceiverId}&amount=${parsedAmount}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      if (!response.ok) throw new Error("Failed to create money request");
+      // Optionally, you could update a requests state or display a success message.
+      setModalType(null);
+      setRequestReceiverId("");
+      setRequestAmount("");
+    } catch (error) {
+      console.error("Money request creation failed:", error);
+    }
+  };
+
+  // ---------------------------------------------------------------
   // Sorting + Pagination
   const totalPages = Math.ceil(transactions.length / transactionsPerPage);
   const indexOfLastTransaction = currentPage * transactionsPerPage;
@@ -318,7 +356,7 @@ export default function Dashboard() {
       {/* Header Section */}
       <Header user={user} />
 
-      <h1 className="text-2xl font-bold text-center text-blue-900 mb-4">Pablo EscoHUB</h1>
+      <h1 className="text-2xl font-bold text-center text-blue-900 mb-4 mt-5">Pablo EscoHUB</h1>
       <div className="flex justify-center gap-6">
         <motion.div 
           className="bg-white w-110 h-30 p-6 rounded-lg shadow-md text-center border border-gray-300 flex flex-col justify-center" 
@@ -329,40 +367,29 @@ export default function Dashboard() {
         </motion.div>
       </div>
 
+      {/* Action Buttons */}
       <div className="flex justify-center mt-6">
         <MotionButton onClick={() => setModalType("send")}>Send Money</MotionButton>
         <MotionButton onClick={() => setModalType("withdraw")}>Withdraw Money</MotionButton>
         <MotionButton onClick={() => setModalType("deposit")}>Deposit Money</MotionButton>
+        <MotionButton onClick={() => setModalType("request")}>Request Money</MotionButton>
       </div>
 
       <h2 className="text-xl font-bold text-center mt-10">Transaction History:</h2>
-      <div className=" w-max-vh m-10">
+      <div className="w-max-vh m-10">
         <table className="w-full mt-4 border-collapse border border-gray-300 text-sm">
           <thead>
             <tr className="bg-gray-200 max-w-50 min-w-50">
-              {/* Clickable headers for sorting */}
-              <th
-                className="border cursor-pointer"
-                onClick={() => handleSort("date")}
-              >
+              <th className="border cursor-pointer" onClick={() => handleSort("date")}>
                 Date {sortColumn === "date" ? (sortDirection === "asc" ? "▲" : "▼") : ""}
               </th>
-              <th
-                className="border cursor-pointer"
-                onClick={() => handleSort("type")}
-              >
+              <th className="border cursor-pointer" onClick={() => handleSort("type")}>
                 Transaction {sortColumn === "type" ? (sortDirection === "asc" ? "▲" : "▼") : ""}
               </th>
-              <th
-                className="border cursor-pointer"
-                onClick={() => handleSort("receiver")}
-              >
+              <th className="border cursor-pointer" onClick={() => handleSort("receiver")}>
                 Receiver {sortColumn === "receiver" ? (sortDirection === "asc" ? "▲" : "▼") : ""}
               </th>
-              <th
-                className="border cursor-pointer"
-                onClick={() => handleSort("amount")}
-              >
+              <th className="border cursor-pointer" onClick={() => handleSort("amount")}>
                 Amount {sortColumn === "amount" ? (sortDirection === "asc" ? "▲" : "▼") : ""}
               </th>
             </tr>
@@ -372,9 +399,7 @@ export default function Dashboard() {
               <tr key={index} className="text-center hover:bg-gray-100">
                 <td className="border p-5">{new Date(tx.date).toLocaleDateString()}</td>
                 <td className="border p-2">{tx.type || "N/A"}</td>
-                <td className="border p-2">
-                  {tx.receiverAccount ? `To Account ID:  ${tx.receiverAccount.aId}` : "N/A"} 
-                </td>
+                <td className="border p-2">{tx.receiverAccount ? `To Account ID: ${tx.receiverAccount.aId}` : "N/A"}</td>
                 <td className="border p-2">₱{tx.amount.toFixed(2)}</td>
               </tr>
             ))}
@@ -395,9 +420,7 @@ export default function Dashboard() {
         </MotionButton>
       </div>
 
-      {/* -----------------------------------------
-          MAIN MODALS (Step 1: enter transaction)
-      ----------------------------------------- */}
+      {/* MODALS */}
       <Modal
         isOpen={modalType === "deposit"}
         onClose={() => setModalType(null)}
@@ -411,15 +434,12 @@ export default function Dashboard() {
           value={depositAmount}
           onChange={(e) => setDepositAmount(e.target.value)}
         />
-        {/* Instead of calling handleDeposit immediately, we open the confirmation. */}
         <MotionButton
           onClick={() => {
-            // Validate deposit input
             if (!depositAmount || parseFloat(depositAmount) <= 0) {
               console.error("Invalid deposit amount:", depositAmount);
               return;
             }
-            // Close the deposit modal, open the confirm deposit modal
             setModalType(null);
             setConfirmDepositOpen(true);
           }}
@@ -441,7 +461,6 @@ export default function Dashboard() {
           value={withdrawAmount}
           onChange={(e) => setWithdrawAmount(e.target.value)}
         />
-        {/* Instead of calling handleWithdraw immediately, open confirmation. */}
         <MotionButton
           onClick={() => {
             if (!withdrawAmount || parseFloat(withdrawAmount) <= 0) {
@@ -476,7 +495,6 @@ export default function Dashboard() {
           value={transferAmount}
           onChange={(e) => setTransferAmount(e.target.value)}
         />
-        {/* Instead of calling handleTransfer immediately, open confirmation. */}
         <MotionButton
           onClick={() => {
             const parsedAmount = parseFloat(transferAmount);
@@ -497,13 +515,37 @@ export default function Dashboard() {
         </MotionButton>
       </Modal>
 
-      {/* -----------------------------------------
-          CONFIRMATION MODALS (Step 2: confirm)
-      ----------------------------------------- */}
+      {/* New Request Money Modal */}
+      <Modal
+        isOpen={modalType === "request"}
+        onClose={() => setModalType(null)}
+        title="Request Money"
+        balance={balance}
+      >
+        <input
+          type="number"
+          placeholder="Receiver ID"
+          className="w-full p-2 border rounded mb-3"
+          value={requestReceiverId}
+          onChange={(e) => setRequestReceiverId(e.target.value)}
+        />
+        <input
+          type="number"
+          placeholder="Amount"
+          className="w-full p-2 border rounded mb-3"
+          value={requestAmount}
+          onChange={(e) => setRequestAmount(e.target.value)}
+        />
+        <MotionButton onClick={handleRequestMoney}>
+          Next
+        </MotionButton>
+      </Modal>
+
+      {/* Confirmation Modals */}
       <ConfirmationModal
         isOpen={confirmDepositOpen}
         onClose={() => setConfirmDepositOpen(false)}
-        onConfirm={handleDeposit}  // <-- Real deposit call
+        onConfirm={handleDeposit}
         title="Confirm Deposit"
       >
         <p>You are about to deposit <strong>₱{depositAmount}</strong>.</p>
@@ -513,7 +555,7 @@ export default function Dashboard() {
       <ConfirmationModal
         isOpen={confirmWithdrawOpen}
         onClose={() => setConfirmWithdrawOpen(false)}
-        onConfirm={handleWithdraw} // <-- Real withdraw call
+        onConfirm={handleWithdraw}
         title="Confirm Withdrawal"
       >
         <p>You are about to withdraw <strong>₱{withdrawAmount}</strong>.</p>
@@ -523,7 +565,7 @@ export default function Dashboard() {
       <ConfirmationModal
         isOpen={confirmSendOpen}
         onClose={() => setConfirmSendOpen(false)}
-        onConfirm={handleTransfer} // <-- Real transfer call
+        onConfirm={handleTransfer}
         title="Confirm Transfer"
       >
         <p>
