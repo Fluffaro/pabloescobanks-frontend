@@ -286,8 +286,10 @@ export default function Dashboard() {
         }
       });
   
-      if (!response.ok) throw new Error("Withdrawal failed");
-  
+      if (!response.ok){
+          router.push("../error/500");
+
+      }
       setModalType(null);
       setWithdrawAmount("");
   
@@ -325,8 +327,10 @@ export default function Dashboard() {
           "Authorization": `Bearer ${token}`,
         },
       });
-  
-      if (!response.ok) throw new Error("Transfer failed");
+
+      if (!response.ok){
+          router.push("../error/401");
+      }
   
       setModalType(null);
       setTransferAmount("");

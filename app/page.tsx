@@ -36,7 +36,6 @@ export default function AuthPage() {
     setError("");
 
     if (isLogin) {
-      // Login logic
       try {
         const response = await fetch("http://localhost:8080/auth/login", {
           method: "POST",
@@ -45,16 +44,25 @@ export default function AuthPage() {
         });
 
         if (!response.ok) {
-          const errorData = await response.json();
-          setError(errorData.message || "Login failed");
-        } else {
-          const data = await response.json();
+          try {
+            const errorData = await response.json();
+            setError(errorData.message || "Login failed");
+            router.push("/error/403");
+          } catch {
+            setError("Login failed. Please try again.");
 
-          // Save token and userId in localStorage
-          localStorage.setItem("token", data.token);
-          localStorage.setItem("userId", data.userId);
+          }
+          return;
+        }
 
-          // Decode JWT to get user role
+        const data = await response.json();
+
+        // Save token and userId in localStorage
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("userId", data.userId);
+
+        // Decode JWT to get user role
+        try {
           const base64Url = data.token.split(".")[1];
           const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
           const decodedPayload = JSON.parse(atob(base64));
@@ -66,62 +74,78 @@ export default function AuthPage() {
           } else {
             router.push("/dashboard");
           }
+        } catch {
+          setError("Login succeeded, but an error occurred while processing user role.");
         }
       } catch (err) {
         console.error(err);
-        setError("An error occurred during login.");
+        setError(err instanceof Error ? err.message : "An unexpected error occurred.");
       }
-    } else if (isEmailSignup){
-        // Registration logic
-         if (password !== confirmPassword) {
-            setError("Passwords do not match");
+    } else if (isEmailSignup) {
+      // Registration logic
+      if (password !== confirmPassword) {
+        setError("Passwords do not match");
+        return;
+      }
+
+      try {
+        const newUser = {
+          name,
+          username,
+          email,
+          password,
+          birthday, // the input returns an ISO date string
+          mobile: Number(mobile),
+          date_joined: new Date(), // current date
+          role: "USER", // default role
+        };
+
+        const response = await fetch("http://localhost:8080/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(newUser),
+        });
+
+        if (!response.ok) {
+          try {
+            const errorData = await response.json();
+            setError(errorData.message || "Registration failed");
+          } catch {
+            setError("Registration failed. Please try again.");
+          }
+          return;
+        }
+
+        // Automatically log in after successful registration
+        try {
+          const loginResponse = await fetch("http://localhost:8080/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username: email, password }),
+          });
+
+          if (!loginResponse.ok) {
+            setError("Registration succeeded, but auto-login failed. Please log in manually.");
             return;
-         }
-         try {
-             const newUser = {
-                name,
-                username,
-                email,
-                password,
-                birthday, // the input returns an ISO date string
-                mobile: Number(mobile),
-                date_joined: new Date(), // current date
-                role: "USER", // default role; change as needed
-             };
+          }
 
-             const response = await fetch("http://localhost:8080/auth/register", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(newUser),
-             });
+          const loginData = await loginResponse.json();
+          localStorage.setItem("token", loginData.token);
+          localStorage.setItem("userId", loginData.userId);
 
-                  if (!response.ok) {
-                    const errorData = await response.json();
-                    setError(errorData.message || "Registration failed");
-                  } else {
-                    // Optionally, automatically log the user in after successful registration
-                    const loginResponse = await fetch("http://localhost:8080/auth/login", {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ username: email, password }),
-                    });
-                    if (loginResponse.ok) {
-                      const loginData = await loginResponse.json();
-                      localStorage.setItem("token", loginData.token);
-                      localStorage.setItem("userId", loginData.userId); // Store userId for later use
-                      router.push("/dashboard");
-                    } else {
-                      setError("Registration succeeded but auto-login failed. Please try logging in manually.");
-                    }
-                  }
-             } catch (err) {
-                      console.error(err);
-                      setError("An error occurred during registration.");
-             }
-         } else {
-               // For initial sign-up, show the extended sign-up form
-               setIsEmailSignup(true);
-         }
+          router.push("/dashboard");
+        } catch (err) {
+          console.error(err);
+          setError("Registration succeeded, but an error occurred during auto-login.");
+        }
+      } catch (err) {
+        console.error(err);
+        setError(err instanceof Error ? err.message : "An unexpected error occurred during registration.");
+      }
+    } else {
+      // For initial sign-up, show the extended sign-up form
+      setIsEmailSignup(true);
+    }
   };
 
 
