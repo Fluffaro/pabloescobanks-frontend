@@ -1,9 +1,9 @@
 import AccountList from "./AccountList";
-
+import Header from "@/app/components/Header";
+import { User } from "@/app/transaction/page";
 const Page = () => {
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Accounts List</h1>
       <AccountList />
     </div>
   );

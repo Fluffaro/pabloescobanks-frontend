@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getUserRole } from "../../../utils/auth";
+import Header from "@/app/components/Header";
 
 interface Transaction {
   amount: number;
@@ -13,7 +14,7 @@ interface Transaction {
 interface Account {
   balance: number;
   dateCreated: string;
-  aid: number;
+  aId: number;
   sentTransactions: Transaction[];
   receivedTransactions: Transaction[];
 }
@@ -101,6 +102,9 @@ const AccountList = () => {
   return (
     <div className="p-4">
       {/* Search & Filters */}
+      <Header user={null} />
+      <h1 className="text-2xl font-bold mb-4">Accounts List</h1>
+
       <div className="flex justify-between items-center mb-4">
         <input
           type="text"
