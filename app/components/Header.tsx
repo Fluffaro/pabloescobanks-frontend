@@ -8,7 +8,6 @@ interface HeaderProps {
   user? : User | null;
 }
 
-
 const Header = ({user} : HeaderProps) => {
   const router = useRouter();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -32,9 +31,25 @@ const Header = ({user} : HeaderProps) => {
     animate={{ rotate: [0, 5, -5, 0] }} // Tilts left and right
     transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
   />
- 
+  <div className="relative">
+    <button onClick={toggleDropdown} className="px-4 py-2 border rounded bg-gray-200 text-black hover:bg-gray-300 focus:outline-none">
+      {user?.username ?? "Admin"}
+    </button>
+
+    {isDropdownOpen && 
+      <div className="absolute right-0 mt-2 w-40 bg-white shadow-lg  rounded-md border border-gray-200">
+        <ul className="list-none p-2">
+          <li>
+              <button onClick={handleLogout} className="w-full px-4 py-2 text-left text-black hover:bg-gray-200 rounded-md ">
+                Logout
+              </button>
+
+          </li>
+        </ul>
+      </div>
+      }
+  </div>
   {/* Logout Button on the Right */}
-  <MotionButton onClick={() => router.push("/")}>Logout</MotionButton>
 </div>
 
   );
