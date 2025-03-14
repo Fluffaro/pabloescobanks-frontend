@@ -346,7 +346,7 @@ export default function Dashboard() {
   
 
   return (
-    <div className="p-10">
+    <div className="">
       
         {/* Header Section */}
     <Header user={user} />
@@ -370,7 +370,7 @@ export default function Dashboard() {
       </div>
 
       <h2 className="text-xl font-bold text-center mt-10">Transaction History:</h2>
-      <div className="overflow-x-auto max-w-7xl mx-auto">
+      <div className="overflow-x-auto max-w-7xl m-10">
         <table className="w-full mt-4 border-collapse border border-gray-300 text-sm">
           <thead>
             <tr className="bg-gray-200">

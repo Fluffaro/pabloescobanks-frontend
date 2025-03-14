@@ -19,18 +19,21 @@ const Header = ({user} : HeaderProps) => {
   }
   
   return (
-    <div className="flex justify-between items-center m-10 text-black">
-  {/* Bank Name on the Left */}
-  <h1 className="text-xl font-bold">Welcome To Pablo EscoBANKS, {user?.name}</h1>
- 
-  {/* Tilting Logo in the Center */}
-  <motion.img
+    <div className="flex justify-between items-center px-5 text-black shadow-lg bg-[#fffff2]">
+      <div className="flex flex-row justify-items-center items-center">
+      <motion.img
     src="/pablologo.png"
     alt="Pablo EscoBANKS Logo"
-    className="h-40 w-auto mr-22"
+    className="h-12 w-auto"
     animate={{ rotate: [0, 5, -5, 0] }} // Tilts left and right
     transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
   />
+  {/* Bank Name on the Left */}
+  <h1 className="text-xl font-bold">Welcome, {user?.name}</h1>
+ 
+  {/* Tilting Logo in the Center */}
+  
+  </div>
   <div className="relative">
     <button onClick={toggleDropdown} className="px-4 py-2 border rounded bg-gray-200 text-black hover:bg-gray-300 focus:outline-none">
       {user?.username ?? "Admin"}
