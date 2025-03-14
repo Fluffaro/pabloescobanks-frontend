@@ -3,6 +3,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import { handleApiError } from "@/utils/errorHandler"; // Import the error handler
+
 
 export default function AuthPage() {
   const [email, setEmail] = useState("");
@@ -121,6 +123,11 @@ export default function AuthPage() {
                setIsEmailSignup(true);
          }
   };
+
+
+
+
+
 
 
   const toggleAuthMode = () => {
