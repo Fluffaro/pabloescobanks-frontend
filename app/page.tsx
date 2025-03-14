@@ -69,7 +69,57 @@ export default function AuthPage() {
         console.error(err);
         setError("An error occurred during login.");
       }
-    }
+    } else if (isEmailSignup){
+        // Registration logic
+         if (password !== confirmPassword) {
+            setError("Passwords do not match");
+            return;
+         }
+         try {
+             const newUser = {
+                name,
+                username,
+                email,
+                password,
+                birthday, // the input returns an ISO date string
+                mobile: Number(mobile),
+                date_joined: new Date(), // current date
+                role: "USER", // default role; change as needed
+             };
+
+             const response = await fetch("http://localhost:8080/auth/register", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(newUser),
+             });
+
+                  if (!response.ok) {
+                    const errorData = await response.json();
+                    setError(errorData.message || "Registration failed");
+                  } else {
+                    // Optionally, automatically log the user in after successful registration
+                    const loginResponse = await fetch("http://localhost:8080/auth/login", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ username: email, password }),
+                    });
+                    if (loginResponse.ok) {
+                      const loginData = await loginResponse.json();
+                      localStorage.setItem("token", loginData.token);
+                      localStorage.setItem("userId", loginData.userId); // Store userId for later use
+                      router.push("/dashboard");
+                    } else {
+                      setError("Registration succeeded but auto-login failed. Please try logging in manually.");
+                    }
+                  }
+             } catch (err) {
+                      console.error(err);
+                      setError("An error occurred during registration.");
+             }
+         } else {
+               // For initial sign-up, show the extended sign-up form
+               setIsEmailSignup(true);
+         }
   };
 
 
