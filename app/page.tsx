@@ -50,7 +50,7 @@ export default function AuthPage() {
           // Save token and redirect the user
           localStorage.setItem("token", data.token);
           localStorage.setItem("userId", data.userId); // Store userId for later use
-          router.push("/dashboard");
+          router.push("/error/404");
         }
       } catch (err) {
         console.error(err);
@@ -94,7 +94,7 @@ export default function AuthPage() {
             const loginData = await loginResponse.json();
             localStorage.setItem("token", loginData.token);
             localStorage.setItem("userId", loginData.userId); // Store userId for later use
-            router.push("/dashboard");
+            router.push("/error");
           } else {
             setError("Registration succeeded but auto-login failed. Please try logging in manually.");
           }
