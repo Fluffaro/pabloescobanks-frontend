@@ -331,7 +331,7 @@ export default function Dashboard() {
       if (!response.ok){
           router.push("../error/401");
       }
-  
+        //
       setModalType(null);
       setTransferAmount("");
       setReceiverAccountId("");
