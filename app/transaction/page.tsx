@@ -20,6 +20,8 @@ export interface Transactions {
 export interface User {
   uid: number;
   name: string,
+  role: string
+  username: string
 }
 
 const page = () => {
@@ -53,7 +55,6 @@ const page = () => {
       setError(error.message);
     }
   }
-
   async function fetchTransaction() {
     const token = localStorage.getItem("token");
     const userId = localStorage.getItem("UIDparam");
@@ -120,7 +121,7 @@ const page = () => {
   useEffect(() => {
     filterTransactions();
   }, [transactionType, startDate, endDate]);
-
+  
   return (
     <div className="bg-white flex flex-col h-full min-h-screen w-full min-w-screen">
       {/* Header of the page = to be adjusted*/}
