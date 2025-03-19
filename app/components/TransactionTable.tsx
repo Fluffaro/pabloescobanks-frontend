@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Transactions } from "../transaction/page";
+import MotionButton from "./MotionButton";
 
 const Table = ({ transactions }: { transactions: Transactions[] }) => {
   const [currentPage, setCurrentPage] = useState(1);
@@ -15,6 +16,14 @@ const Table = ({ transactions }: { transactions: Transactions[] }) => {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     });
+  };
+
+  const goToNextPage = () => {
+    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+  };
+
+  const goToPrevPage = () => {
+    if (currentPage > 1) setCurrentPage(currentPage - 1);
   };
 
   const handlePageChange = (page: number) => {
@@ -62,16 +71,18 @@ const Table = ({ transactions }: { transactions: Transactions[] }) => {
           </tbody>
         </table>
       )}
-
-      <div className="flex justify-center mt-5">
-        <button onClick={() => handlePageChange(currentPage-1)} disabled={currentPage==1}  className="px-4 py-2 mx-2 bg-gray-300 text-black rounded-lg disabled:bg-gray-400">
-            Previous
-        </button>
-        <span className="px-4 py-2 text-black">{`Page ${currentPage} of ${totalPages}` }</span>
-        <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage==totalPages} className="px-4 py-2 mx-2 bg-gray-300 text-black rounded-lg disabled:bg-gray-400">
-            Next
-        </button>
+      <div className="flex justify-center mt-4 space-x-4 text-black">
+        <MotionButton onClick={goToPrevPage} disabled={currentPage === 1}>
+          ◄
+        </MotionButton>
+        <span className="font-bold">
+          Page {currentPage} of {totalPages}
+        </span>
+        <MotionButton onClick={goToNextPage} disabled={currentPage === totalPages}>
+          ►
+        </MotionButton>
       </div>
+
     </div>
   );
 };

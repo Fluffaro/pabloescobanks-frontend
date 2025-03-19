@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getUserRole } from "../../../utils/auth";
 import Header from "@/app/components/Header";
+import MotionButton from "@/app/components/MotionButton";
 
 interface Transaction {
   amount: number;
@@ -99,6 +100,14 @@ const AccountList = () => {
   const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
   const paginatedUsers = filteredUsers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
+
+  const goToNextPage = () => {
+    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+  };
+
+  const goToPrevPage = () => {
+    if (currentPage > 1) setCurrentPage(currentPage - 1);
+  };
   return (
     <div className="p-4">
       {/* Search & Filters */}
@@ -174,23 +183,18 @@ const AccountList = () => {
       </div>
 
       {/* Pagination */}
-      <div className="flex justify-between items-center mt-4">
-        <button
-          onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-          disabled={currentPage === 1}
-          className="border px-3 py-1 rounded disabled:opacity-50"
-        >
+      <div className="flex justify-center mt-4 space-x-4 text-black">
+        <MotionButton onClick={goToPrevPage} disabled={currentPage === 1}>
           ◄
-        </button>
-        <span>Page {currentPage} of {totalPages}</span>
-        <button
-          onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-          disabled={currentPage === totalPages}
-          className="border px-3 py-1 rounded disabled:opacity-50"
-        >
+        </MotionButton>
+        <span className="font-bold">
+          Page {currentPage} of {totalPages}
+        </span>
+        <MotionButton onClick={goToNextPage} disabled={currentPage === totalPages}>
           ►
-        </button>
+        </MotionButton>
       </div>
+
     </div>
   );
 };

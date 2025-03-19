@@ -33,11 +33,10 @@ const Header = ({ user }: HeaderProps) => {
 
   // Determine the receiver account ID from the user object or fallback to localStorage.
   // (Make sure you are storing the proper account id. Adjust as needed.)
-  const receiverAccId = user?.userId || localStorage.getItem("userId");
+  const receiverAccId =  localStorage.getItem("userId");
 
   // Poll the backend API for money requests every 5 seconds.
   useEffect(() => {
-    console.log("Receiver Account ID:", receiverAccId);
     if (!receiverAccId) return;
 
     const fetchMoneyRequests = async () => {

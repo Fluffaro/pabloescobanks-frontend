@@ -96,8 +96,7 @@ export default function Dashboard() {
   // ---------------------------------------------------------------
   // Fetch user
   async function fetchUser() {
-    const token = localStorage.getItem("token");
-    const userId = localStorage.getItem("userId");
+
 
     try {
       const userRes = await fetch(`http://localhost:8080/api/users/${userId}`, {
@@ -129,6 +128,7 @@ export default function Dashboard() {
   // ---------------------------------------------------------------
   // Fetch account details
   const fetchAccountDetails = async () => {
+
     try {
       const response = await fetch(`${API_BASE_URL}/accounts/user/${userId}`, {
         method: "GET",
@@ -148,6 +148,7 @@ export default function Dashboard() {
   // ---------------------------------------------------------------
   // Fetch transaction history
   const fetchTransactions = async () => {
+
     try {
       const response = await fetch(`${API_BASE_URL}/transactions/user/${userId}`, {
         method: "GET",
@@ -175,6 +176,7 @@ export default function Dashboard() {
   // ---------------------------------------------------------------
   // The actual deposit API call
   const handleDeposit = async () => {
+
     const parsedAmount = parseFloat(depositAmount);
     if (!depositAmount || isNaN(parsedAmount) || parsedAmount <= 0) {
       console.error("Invalid deposit amount:", depositAmount);
@@ -207,6 +209,7 @@ export default function Dashboard() {
   // ---------------------------------------------------------------
   // The actual withdrawal API call
   const handleWithdraw = async () => {
+
     const parsedAmount = parseFloat(withdrawAmount);
     if (!withdrawAmount || isNaN(parsedAmount) || parsedAmount <= 0) {
       console.error("Invalid withdrawal amount:", withdrawAmount);
@@ -250,6 +253,7 @@ export default function Dashboard() {
       return;
     }
     try {
+
       const response = await fetch(
         `${API_BASE_URL}/transactions/transfer?senderId=${userId}&receiverAccountId=${parsedReceiverId}&amount=${parsedAmount}`,
         {
@@ -352,7 +356,7 @@ export default function Dashboard() {
 
   // ---------------------------------------------------------------
   return (
-    <div>
+    <div className="bg-white min-h-screen text-black">
       {/* Header Section */}
       <Header user={user} />
 
