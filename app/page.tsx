@@ -3,6 +3,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import { handleApiError } from "@/utils/errorHandler"; // Import the error handler
+
 
 export default function AuthPage() {
   const [email, setEmail] = useState("");
@@ -34,27 +36,50 @@ export default function AuthPage() {
     setError("");
 
     if (isLogin) {
-      // Login logic
       try {
         const response = await fetch("http://localhost:8080/auth/login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          // Using email field as the username; adjust if needed
           body: JSON.stringify({ username: email, password }),
         });
+
         if (!response.ok) {
-          const errorData = await response.json();
-          setError(errorData.message || "Login failed");
-        } else {
-          const data = await response.json();
-          // Save token and redirect the user
-          localStorage.setItem("token", data.token);
-          localStorage.setItem("userId", data.userId); // Store userId for later use
-          router.push("/dashboard");
+          try {
+            const errorData = await response.json();
+            setError(errorData.message || "Login failed");
+            router.push("/error/403");
+          } catch {
+            setError("Login failed. Please try again.");
+
+          }
+          return;
+        }
+
+        const data = await response.json();
+
+        // Save token and userId in localStorage
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("userId", data.userId);
+
+        // Decode JWT to get user role
+        try {
+          const base64Url = data.token.split(".")[1];
+          const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+          const decodedPayload = JSON.parse(atob(base64));
+          const userRole = decodedPayload.role;
+
+          // Redirect based on role
+          if (userRole === "ADMIN") {
+            router.push("/admin/accounts");
+          } else {
+            router.push("/dashboard");
+          }
+        } catch {
+          setError("Login succeeded, but an error occurred while processing user role.");
         }
       } catch (err) {
         console.error(err);
-        setError("An error occurred during login.");
+        setError(err instanceof Error ? err.message : "An unexpected error occurred.");
       }
     } else if (isEmailSignup) {
       // Registration logic
@@ -62,6 +87,7 @@ export default function AuthPage() {
         setError("Passwords do not match");
         return;
       }
+
       try {
         const newUser = {
           name,
@@ -71,7 +97,7 @@ export default function AuthPage() {
           birthday, // the input returns an ISO date string
           mobile: Number(mobile),
           date_joined: new Date(), // current date
-          role: "USER", // default role; change as needed
+          role: "USER", // default role
         };
 
         const response = await fetch("http://localhost:8080/auth/register", {
@@ -81,33 +107,52 @@ export default function AuthPage() {
         });
 
         if (!response.ok) {
-          const errorData = await response.json();
-          setError(errorData.message || "Registration failed");
-        } else {
-          // Optionally, automatically log the user in after successful registration
+          try {
+            const errorData = await response.json();
+            setError(errorData.message || "Registration failed");
+          } catch {
+            setError("Registration failed. Please try again.");
+          }
+          return;
+        }
+
+        // Automatically log in after successful registration
+        try {
           const loginResponse = await fetch("http://localhost:8080/auth/login", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ username: email, password }),
-          }); 
-          if (loginResponse.ok) {
-            const loginData = await loginResponse.json();
-            localStorage.setItem("token", loginData.token);
-            localStorage.setItem("userId", loginData.userId); // Store userId for later use
-            router.push("/dashboard");
-          } else {
-            setError("Registration succeeded but auto-login failed. Please try logging in manually.");
+          });
+
+          if (!loginResponse.ok) {
+            setError("Registration succeeded, but auto-login failed. Please log in manually.");
+            return;
           }
+
+          const loginData = await loginResponse.json();
+          localStorage.setItem("token", loginData.token);
+          localStorage.setItem("userId", loginData.userId);
+
+          router.push("/dashboard");
+        } catch (err) {
+          console.error(err);
+          setError("Registration succeeded, but an error occurred during auto-login.");
         }
       } catch (err) {
         console.error(err);
-        setError("An error occurred during registration.");
+        setError(err instanceof Error ? err.message : "An unexpected error occurred during registration.");
       }
     } else {
       // For initial sign-up, show the extended sign-up form
       setIsEmailSignup(true);
     }
   };
+
+
+
+
+
+
 
   const toggleAuthMode = () => {
     if (isEmailSignup) {
@@ -132,6 +177,7 @@ export default function AuthPage() {
         animate={{ x: 0, opacity: 1 }}
         transition={{ duration: 0.7, delay: 0.2 }}
       >
+        <motion.div animate={{ rotate: [0, 5, -5, 0] }} transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}>
         <motion.img
           src="/pablologo.png"
           alt="Pablo EscoBANKS Logo"
@@ -139,6 +185,7 @@ export default function AuthPage() {
           whileHover={{ scale: 1.05 }}
           transition={{ type: "spring", stiffness: 300 }}
         />
+        </motion.div>
       </motion.div>
 
       {/* Right side - Form */}
