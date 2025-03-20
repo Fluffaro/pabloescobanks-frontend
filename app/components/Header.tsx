@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Bell } from "lucide-react"; // Make sure you have lucide-react installed
 import { useToast } from "../components/hooks/use-toast";
 import ConfirmationModal from "../components/ConfirmationModal";
+import Image from "next/image";
 
 // -----------------------------------------------------------------------------
 // 1) Interfaces
@@ -205,8 +206,21 @@ const Header: React.FC<HeaderProps> = ({ user }) => {
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         {/* Left: Title or Logo */}
         <div className="flex items-center">
+          <motion.div 
+            animate={{ rotate: [0, 10, 0, -10, 0] }} 
+            transition={{ repeat: Infinity, duration: 2 }}
+            className="mr-3 relative w-8 h-8"
+          >
+            <Image 
+              src="/pablologo.png" 
+              alt="Pablo Escobanks Logo" 
+              width={32} 
+              height={32} 
+              className="rounded-full border-2 border-neutral-200"
+            />
+          </motion.div>
           <h1 className="text-xl font-semibold text-[#1d1d1f]">
-            <span className="text-blue-500">Wallet</span>Dashboard
+            <span className="text-blue-500">Pablo</span>Escobanks
           </h1>
         </div>
 

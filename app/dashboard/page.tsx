@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { useToast } from "../components/hooks/use-toast";
 import Header from "../components/Header";
+import Image from "next/image";
 
 // ------------------------------------------------------------------------------------
 // 1) Interfaces and Types
@@ -24,10 +25,15 @@ interface Transaction {
   amount: number;
 }
 
+interface DailyBalance {
+  date: string;
+  balance: number;
+}
+
 // ------------------------------------------------------------------------------------
 // 2) API Base URL - Put your real endpoint here
 // ------------------------------------------------------------------------------------
-const API_BASE_URL = "http://localhost:8080/api"; // Or your actual endpoint
+const API_BASE_URL = "http://localhost:8080/api"; 
 
 // ------------------------------------------------------------------------------------
 // 3) Framer Motion animation variants
@@ -71,8 +77,9 @@ const Modal: React.FC<{
   onClose: () => void;
   title: string;
   balance: string;
+  growthPercentage?: number;
   children: React.ReactNode;
-}> = ({ isOpen, onClose, title, balance, children }) => {
+}> = ({ isOpen, onClose, title, balance, growthPercentage = 0, children }) => {
   return (
     <AnimatePresence>
       {isOpen && (
@@ -116,6 +123,26 @@ const Modal: React.FC<{
               <div className="bg-neutral-50 rounded-xl p-5 mb-6 border border-neutral-100">
                 <p className="text-neutral-500 text-sm font-medium mb-1">Current Balance</p>
                 <h3 className="text-2xl font-semibold text-[#1d1d1f]">{balance}</h3>
+                {/* Dynamic growth indicator */}
+                {growthPercentage !== 0 && (
+                  <div className={`text-sm font-medium pb-1 flex items-center ${growthPercentage > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="mr-1"
+                    >
+                      <path d={growthPercentage > 0 ? "m6 15 6-6 6 6" : "m6 9 6 6 6-6"} />
+                    </svg>
+                    {Math.abs(growthPercentage).toFixed(2)}%
+                  </div>
+                )}
               </div>
               {children}
             </div>
@@ -200,11 +227,6 @@ const ConfirmationModal: React.FC<{
 };
 
 // ------------------------------------------------------------------------------------
-// 6) Header Component
-// ------------------------------------------------------------------------------------
-<Header user={user} />
-
-// ------------------------------------------------------------------------------------
 // 7) Main Dashboard Component (new UI + old integration)
 // ------------------------------------------------------------------------------------
 export default function Dashboard() {
@@ -223,9 +245,10 @@ export default function Dashboard() {
 
   // We'll show the user info in the header, and also handle the real data
   const [user, setUser] = useState<User | undefined>();
-  const [balance, setBalance] = useState<string>("$0.00");
+  const [balance, setBalance] = useState<string>("₱0.00");
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [error, setError] = useState<string>("");
+  const [growthPercentage, setGrowthPercentage] = useState<number>(0);
 
   // For deposit, withdraw, send, request
   const [depositAmount, setDepositAmount] = useState<string>("");
@@ -282,7 +305,11 @@ export default function Dashboard() {
         throw new Error("Failed to fetch account details");
       }
       const data = await response.json();
-      setBalance(`$${data.balance.toFixed(2)}`);
+      setBalance(`₱${data.balance.toFixed(2)}`);
+      
+      if (transactions.length > 0) {
+        calculateGrowthPercentage(transactions);
+      }
     } catch (error) {
       console.error("Error fetching account details:", error);
     }
@@ -302,10 +329,54 @@ export default function Dashboard() {
       }
       const data = await response.json();
       setTransactions(data);
+      
+      calculateGrowthPercentage(data);
     } catch (error) {
       console.error("Error fetching transactions:", error);
     }
   }
+
+  // Calculate growth percentage based on transactions
+  const calculateGrowthPercentage = (transactions: Transaction[]) => {
+    if (!transactions || transactions.length === 0) {
+      setGrowthPercentage(0);
+      return;
+    }
+    
+    // Get transactions from the last 30 days
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const recentTransactions = transactions.filter(tx => 
+      new Date(tx.date) >= thirtyDaysAgo
+    );
+    
+    // Calculate net change (deposits minus withdrawals/transfers)
+    let netChange = 0;
+    recentTransactions.forEach(tx => {
+      if (tx.type === "DEPOSIT") {
+        netChange += tx.amount;
+      } else if (tx.type === "WITHDRAWAL" || tx.type === "TRANSFER") {
+        netChange -= tx.amount;
+      }
+    });
+    
+    // If we have current balance as a number
+    const currentBalanceNum = parseFloat(balance.replace("₱", ""));
+    if (!isNaN(currentBalanceNum) && currentBalanceNum > 0) {
+      // Calculate percentage (if balance is very low, cap the percentage)
+      const previousBalance = currentBalanceNum - netChange;
+      if (previousBalance <= 0) {
+        setGrowthPercentage(netChange > 0 ? 100 : -100);
+      } else {
+        const growthPercent = (netChange / previousBalance) * 100;
+        // Round to 2 decimal places
+        setGrowthPercentage(Math.round(growthPercent * 100) / 100);
+      }
+    } else {
+      setGrowthPercentage(0);
+    }
+  };
 
   // ---------------------------------------------------------------------------
   // useEffect: fetch data on mount
@@ -357,7 +428,7 @@ export default function Dashboard() {
 
       toast.toast({
         title: "Success",
-        description: `Deposited $${parsedAmount.toFixed(2)} successfully!`,
+        description: `Deposited ₱${parsedAmount.toFixed(2)} successfully!`,
       });
 
       await fetchAccountDetails();
@@ -412,7 +483,7 @@ export default function Dashboard() {
 
       toast.toast({
         title: "Success",
-        description: `Withdrew $${parsedAmount.toFixed(2)} successfully!`,
+        description: `Withdrew ₱${parsedAmount.toFixed(2)} successfully!`,
       });
 
       await fetchAccountDetails();
@@ -479,7 +550,7 @@ export default function Dashboard() {
 
       toast.toast({
         title: "Success",
-        description: `Sent $${parsedAmount.toFixed(2)} to account ${parsedReceiverId}!`,
+        description: `Sent ₱${parsedAmount.toFixed(2)} to account ${parsedReceiverId}!`,
       });
 
       await fetchAccountDetails();
@@ -541,7 +612,7 @@ export default function Dashboard() {
 
       toast.toast({
         title: "Request Sent",
-        description: `Requested $${parsedAmount.toFixed(2)} from account ${parsedReceiverId}`,
+        description: `Requested ₱${parsedAmount.toFixed(2)} from account ${parsedReceiverId}`,
       });
     } catch (error: any) {
       console.error("Money request creation failed:", error);
@@ -615,141 +686,153 @@ export default function Dashboard() {
       <Header user={user} />
 
       <main className="flex-1 container mx-auto px-4 py-8 max-w-5xl">
-        {/* Balance Card */}
-        <motion.section className="mb-10" variants={fadeIn} initial="hidden" animate="visible">
-          <motion.div
-            className="bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.03)] overflow-hidden border border-neutral-100"
+        {/* Balance Cards Row */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+          {/* Main Balance Card */}
+          <motion.div 
+            className="md:col-span-3 bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.03)] overflow-hidden border border-neutral-100"
+            variants={fadeIn} 
+            initial="hidden" 
+            animate="visible"
             whileHover={{ y: -4, boxShadow: "0 10px 40px rgba(0,0,0,0.05)" }}
             transition={{ duration: 0.3 }}
           >
-            <div className="px-8 py-10">
-              <h2 className="text-sm font-medium text-neutral-500 mb-1">Available Balance</h2>
-              <div className="flex items-end space-x-2">
-                <h3 className="text-4xl font-semibold text-[#1d1d1f] tracking-tight">{balance}</h3>
-                {/* Example growth indicator (optional) */}
-                <div className="text-green-500 text-sm font-medium pb-1 flex items-center">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="mr-1"
-                  >
-                    <path d="m6 15 6-6 6 6" />
-                  </svg>
-                  4.25%
+            <div className="p-8">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+                <div>
+                  <h2 className="text-sm font-medium text-neutral-500 mb-1">Available Balance</h2>
+                  <div className="flex items-end space-x-2">
+                    <h3 className="text-4xl font-semibold text-[#1d1d1f] tracking-tight">{balance}</h3>
+                    {/* Dynamic growth indicator */}
+                    {growthPercentage !== 0 && (
+                      <div className={`text-sm font-medium pb-1 flex items-center ${growthPercentage > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="mr-1"
+                        >
+                          <path d={growthPercentage > 0 ? "m6 15 6-6 6 6" : "m6 9 6 6 6-6"} />
+                        </svg>
+                        {Math.abs(growthPercentage).toFixed(2)}%
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
           </motion.div>
-        </motion.section>
-
-        {/* Action Buttons */}
-        <motion.section
-          className="mb-12"
-          variants={fadeIn}
-          initial="hidden"
-          animate="visible"
-          transition={{ delay: 0.2 }}
-        >
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <MotionButton
-              onClick={() => setModalType("send")}
-              className="flex items-center justify-center space-x-2 border border-neutral-200 bg-white"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="text-blue-500"
+          
+          {/* Quick Actions Card - moved to full width */}
+          <motion.div 
+            className="md:col-span-3 bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.03)] overflow-hidden border border-neutral-100 p-6"
+            variants={fadeIn} 
+            initial="hidden" 
+            animate="visible"
+            transition={{ delay: 0.1 }}
+            whileHover={{ y: -4, boxShadow: "0 10px 40px rgba(0,0,0,0.05)" }}
+          >
+            <h2 className="text-sm font-medium text-neutral-500 mb-4">Quick Actions</h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <MotionButton
+                onClick={() => setModalType("deposit")}
+                className="flex flex-col items-center justify-center py-4 border border-neutral-200 bg-white"
               >
-                <path d="m5 9 14-5-5 14-3-5-6-4Z" />
-                <path d="M14 14H5v5h5v-5Z" />
-              </svg>
-              <span>Send Money</span>
-            </MotionButton>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-green-500 mb-2"
+                >
+                  <path d="M12 7V21" />
+                  <path d="m6 13 6-6 6 6" />
+                  <path d="M19 5H5" />
+                </svg>
+                <span>Deposit</span>
+              </MotionButton>
 
-            <MotionButton
-              onClick={() => setModalType("withdraw")}
-              className="flex items-center justify-center space-x-2 border border-neutral-200 bg-white"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="text-red-500"
+              <MotionButton
+                onClick={() => setModalType("withdraw")}
+                className="flex flex-col items-center justify-center py-4 border border-neutral-200 bg-white"
               >
-                <path d="M12 17V3" />
-                <path d="m6 11 6 6 6-6" />
-                <path d="M19 21H5" />
-              </svg>
-              <span>Withdraw</span>
-            </MotionButton>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-red-500 mb-2"
+                >
+                  <path d="M12 17V3" />
+                  <path d="m6 11 6 6 6-6" />
+                  <path d="M19 21H5" />
+                </svg>
+                <span>Withdraw</span>
+              </MotionButton>
 
-            <MotionButton
-              onClick={() => setModalType("deposit")}
-              className="flex items-center justify-center space-x-2 border border-neutral-200 bg-white"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="text-green-500"
+              <MotionButton
+                onClick={() => setModalType("send")}
+                className="flex flex-col items-center justify-center py-4 border border-neutral-200 bg-white"
               >
-                <path d="M12 7V21" />
-                <path d="m6 13 6-6 6 6" />
-                <path d="M19 5H5" />
-              </svg>
-              <span>Deposit</span>
-            </MotionButton>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-blue-500 mb-2"
+                >
+                  <path d="m5 9 14-5-5 14-3-5-6-4Z" />
+                  <path d="M14 14H5v5h5v-5Z" />
+                </svg>
+                <span>Send</span>
+              </MotionButton>
 
-            <MotionButton
-              onClick={() => setModalType("request")}
-              className="flex items-center justify-center space-x-2 border border-neutral-200 bg-white"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="text-purple-500"
+              <MotionButton
+                onClick={() => setModalType("request")}
+                className="flex flex-col items-center justify-center py-4 border border-neutral-200 bg-white"
               >
-                <circle cx="12" cy="12" r="10" />
-                <path d="M9 10h6" />
-                <path d="M9 14h6" />
-              </svg>
-              <span>Request</span>
-            </MotionButton>
-          </div>
-        </motion.section>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-purple-500 mb-2"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M9 10h6" />
+                  <path d="M9 14h6" />
+                </svg>
+                <span>Request</span>
+              </MotionButton>
+            </div>
+          </motion.div>
+        </div>
 
         {/* Transaction History */}
         <motion.section
@@ -896,6 +979,10 @@ export default function Dashboard() {
                                   ? "bg-green-100 text-green-600"
                                   : tx.type === "WITHDRAWAL"
                                   ? "bg-red-100 text-red-600"
+                                  : tx.type === "TRANSFER"
+                                  ? "bg-red-100 text-red-600"
+                                  : tx.type === "CANCELED"
+                                  ? "bg-gray-100 text-gray-500"
                                   : "bg-blue-100 text-blue-600"
                               }`}
                             >
@@ -915,7 +1002,7 @@ export default function Dashboard() {
                                   <path d="M12 3v14" />
                                   <path d="M6 21h12" />
                                 </svg>
-                              ) : tx.type === "WITHDRAWAL" ? (
+                              ) : tx.type === "WITHDRAWAL" || tx.type === "TRANSFER" ? (
                                 <svg
                                   xmlns="http://www.w3.org/2000/svg"
                                   width="16"
@@ -931,8 +1018,23 @@ export default function Dashboard() {
                                   <path d="M12 3v12" />
                                   <path d="M6 21h12" />
                                 </svg>
+                              ) : tx.type === "CANCELED" ? (
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  width="16"
+                                  height="16"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <path d="M18 6 6 18"></path>
+                                  <path d="m6 6 12 12"></path>
+                                </svg>
                               ) : (
-                                // For TRANSFER or other
+                                // For other types
                                 <svg
                                   xmlns="http://www.w3.org/2000/svg"
                                   width="16"
@@ -958,19 +1060,25 @@ export default function Dashboard() {
                           {tx.receiverAccount ? `Account ${tx.receiverAccount.aId}` : "—"}
                         </td>
                         <td className="px-6 py-4 font-medium">
-                          {/* HERE is the updated snippet:
-                              For WITHDRAWAL or TRANSFER => red with “-”
-                              For DEPOSIT => green with “+”
-                          */}
                           <span
                             className={
                               tx.type === "WITHDRAWAL" || tx.type === "TRANSFER"
                                 ? "text-red-600"
-                                : "text-green-600"
+                                : tx.type === "DEPOSIT" 
+                                  ? "text-green-600" 
+                                  : tx.type === "CANCELED"
+                                    ? "text-gray-400"
+                                    : "text-neutral-600"
                             }
                           >
-                            {tx.type === "WITHDRAWAL" || tx.type === "TRANSFER" ? "-" : "+"}
-                            ${tx.amount.toFixed(2)}
+                            {tx.type === "WITHDRAWAL" || tx.type === "TRANSFER" 
+                              ? "-" 
+                              : tx.type === "DEPOSIT" 
+                                ? "+" 
+                                : tx.type === "CANCELED"
+                                  ? "±"
+                                  : ""}
+                            ₱{tx.amount.toFixed(2)}
                           </span>
                         </td>
                       </tr>
@@ -1083,6 +1191,7 @@ export default function Dashboard() {
         onClose={() => setModalType(null)}
         title="Deposit Money"
         balance={balance}
+        growthPercentage={growthPercentage}
       >
         <div className="mb-6">
           <label htmlFor="depositAmount" className="block text-sm font-medium text-neutral-500 mb-2">
@@ -1124,6 +1233,7 @@ export default function Dashboard() {
         onClose={() => setModalType(null)}
         title="Withdraw Money"
         balance={balance}
+        growthPercentage={growthPercentage}
       >
         <div className="mb-6">
           <label htmlFor="withdrawAmount" className="block text-sm font-medium text-neutral-500 mb-2">
@@ -1165,6 +1275,7 @@ export default function Dashboard() {
         onClose={() => setModalType(null)}
         title="Send Money"
         balance={balance}
+        growthPercentage={growthPercentage}
       >
         <div className="space-y-4 mb-6">
           <div>
@@ -1234,6 +1345,7 @@ export default function Dashboard() {
         onClose={() => setModalType(null)}
         title="Request Money"
         balance={balance}
+        growthPercentage={growthPercentage}
       >
         <div className="space-y-4 mb-6">
           <div>
@@ -1281,7 +1393,7 @@ export default function Dashboard() {
         title="Confirm Deposit"
       >
         <p className="mb-2">
-          You are about to deposit <strong>${parseFloat(depositAmount || "0").toFixed(2)}</strong>.
+          You are about to deposit <strong>₱{parseFloat(depositAmount || "0").toFixed(2)}</strong>.
         </p>
         <p>Please confirm to proceed with this transaction.</p>
       </ConfirmationModal>
@@ -1293,7 +1405,7 @@ export default function Dashboard() {
         title="Confirm Withdrawal"
       >
         <p className="mb-2">
-          You are about to withdraw <strong>${parseFloat(withdrawAmount || "0").toFixed(2)}</strong>.
+          You are about to withdraw <strong>₱{parseFloat(withdrawAmount || "0").toFixed(2)}</strong>.
         </p>
         <p>Please confirm to proceed with this transaction.</p>
       </ConfirmationModal>
@@ -1306,7 +1418,7 @@ export default function Dashboard() {
       >
         <p className="mb-2">
           You are about to send{" "}
-          <strong>${parseFloat(transferAmount || "0").toFixed(2)}</strong> to Account ID{" "}
+          <strong>₱{parseFloat(transferAmount || "0").toFixed(2)}</strong> to Account ID{" "}
           <strong>{receiverAccountId}</strong>.
         </p>
         <p>Please confirm to proceed with this transaction.</p>
